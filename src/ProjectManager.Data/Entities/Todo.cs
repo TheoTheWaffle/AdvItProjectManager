@@ -10,7 +10,7 @@ namespace ProjectManager.Data.Entities;
 public class Todo : ITrackable
 
 {
-    public int Id { get; set; }
+    public Guid Id { get; set; }
     public string Title { get; set; } = null!;
     public string? Description { get; set; }
 
@@ -22,4 +22,9 @@ public class Todo : ITrackable
     public string ModifiedBy { get; set; } = null!;
     public Instant? DeletedAt { get; set; }
     public string? DeletedBy { get; set; } = null!;
+}
+public static class TodoExtensions
+{
+    public static IQueryable<Todo> FilterDeleted(this IQueryable<Todo> query)
+        => query.Where(x => x.DeletedAt == null);
 }
