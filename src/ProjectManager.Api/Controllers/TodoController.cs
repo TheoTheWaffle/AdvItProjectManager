@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using NodaTime;
@@ -14,12 +15,12 @@ namespace ProjectManager.Api.Controllers
     {
         private readonly ILogger<TodoController> _logger;
         private readonly IClock _clock;
-        private readonly ApplicationDbContext _Dbcontext;
+        private readonly ApplicationDbContext _dbContext;
         public TodoController(ILogger<TodoController> logger, IClock clock, ApplicationDbContext dbcontext)
         {
             _clock = clock;
             _logger = logger;
-            _Dbcontext = dbcontext;
+            _dbContext = dbcontext;
         }
 
         [HttpPost("api/v1/Todo")]
@@ -36,8 +37,8 @@ namespace ProjectManager.Api.Controllers
                 Description = model.Description,
             }.SetCreateBySystem(now);
 
-            _Dbcontext.Add(newTodo);
-            await _Dbcontext.SaveChangesAsync();
+            _dbContext.Add(newTodo);
+            await _dbContext.SaveChangesAsync();
 
             return Ok();
         }
@@ -45,7 +46,7 @@ namespace ProjectManager.Api.Controllers
         [HttpGet("api/v1/Todo")]
         public async Task<ActionResult<IEnumerable<TodoDetailModel>>> GetList()
         {
-            var dbEntities = await _Dbcontext
+            var dbEntities = await _dbContext
                 .Set<Todo>()
                 .FilterDeleted()
                 .Select(x => new TodoDetailModel
@@ -54,7 +55,7 @@ namespace ProjectManager.Api.Controllers
                     ProjectId = x.ProjectId,
                     Description = x.Description,
                     Title = x.Title,
-                    CreatedAt = x.CreatedAt.ToString(),
+                    CreatedAt = InstantPattern.ExtendedIso.Format(x.CreatedAt),
 
                 })
                 .ToListAsync();
@@ -66,7 +67,7 @@ namespace ProjectManager.Api.Controllers
             [FromRoute] Guid id
             )
         {
-            var dbEntity = await _Dbcontext
+            var dbEntity = await _dbContext
                 .Set<Todo>()
                 .Where(X => X.Id == id)
                 .FilterDeleted()
@@ -76,7 +77,7 @@ namespace ProjectManager.Api.Controllers
                     ProjectId = x.ProjectId,
                     Description = x.Description,
                     Title = x.Title,
-                    CreatedAt = x.CreatedAt.ToString(),
+                    CreatedAt = InstantPattern.ExtendedIso.Format(x.CreatedAt),
                 })
                 .SingleOrDefaultAsync();
             if (dbEntity == null)
@@ -88,10 +89,10 @@ namespace ProjectManager.Api.Controllers
         [HttpPatch("api/v1/Todo/{id}")]
         public async Task<ActionResult> Update(
       [FromRoute] Guid id,
-      [FromBody]TodoCreateModel patch
+      [FromBody] JsonPatchDocument<TodoCreateModel> patch
       )
         {
-            var dbEntity = await _Dbcontext
+            var dbEntity = await _dbContext
                 .Set<Todo>()
                  .FilterDeleted()
                 .SingleOrDefaultAsync(X => X.Id == id);
@@ -100,8 +101,32 @@ namespace ProjectManager.Api.Controllers
             {
                 return NotFound();
             }
+            var now = _clock.GetCurrentInstant();
+            var toUpdate = new TodoCreateModel
+            {
+                Description = dbEntity.Description,
+                Title = dbEntity.Title,
+            };
+            patch.ApplyTo(toUpdate);
 
-           //some code for update entity
+            if (!(ModelState.IsValid && TryValidateModel(toUpdate)))
+            {
+                return ValidationProblem(ModelState);
+            }
+            dbEntity.Title = toUpdate.Title;
+            dbEntity.Description = toUpdate.Description;
+            dbEntity.SetModifyBySystem(now);
+
+            await _dbContext.SaveChangesAsync();
+            dbEntity = await _dbContext.Set<Todo>().FirstAsync(x =>x.Id==dbEntity.Id);
+            return Ok(new TodoDetailModel
+            {
+                Id = dbEntity.Id,
+                Description = dbEntity.Description,
+                Title = dbEntity.Title,
+                CreatedAt = InstantPattern.ExtendedIso.Format(dbEntity.CreatedAt),
+            }); 
+            //some code for update entity
 
             return NoContent();
         }
@@ -110,7 +135,7 @@ namespace ProjectManager.Api.Controllers
            [FromRoute] Guid id
            )
         {
-            var dbEntity = await _Dbcontext
+            var dbEntity = await _dbContext
                 .Set<Todo>()
                  .FilterDeleted()
                 .SingleOrDefaultAsync(X => X.Id == id);
@@ -121,7 +146,7 @@ namespace ProjectManager.Api.Controllers
             }
 
             dbEntity.SetDeleteBySystem(_clock.GetCurrentInstant());
-            await _Dbcontext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync();
 
             return NoContent();
         }

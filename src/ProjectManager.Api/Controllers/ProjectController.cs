@@ -16,12 +16,12 @@ namespace ProjectManager.Api.Controllers
     {
         private readonly ILogger<ProjectController> _logger;
         private readonly IClock _clock;
-        private readonly ApplicationDbContext _Dbcontext;
+        private readonly ApplicationDbContext _dbContext;
         public ProjectController(ILogger<ProjectController> logger, IClock clock, ApplicationDbContext dbcontext)
         {
             _clock = clock;
             _logger = logger;
-            _Dbcontext = dbcontext;
+            _dbContext = dbcontext;
         }
 
 
@@ -31,6 +31,7 @@ namespace ProjectManager.Api.Controllers
            )
         {
             var now = _clock.GetCurrentInstant();
+            
             var newController = new Project
             {
                 Id = Guid.NewGuid(),
@@ -38,8 +39,14 @@ namespace ProjectManager.Api.Controllers
                 Description = model.Description,
             }.SetCreateBySystem(now);
 
-            _Dbcontext.Add(newController);
-            await _Dbcontext.SaveChangesAsync();
+
+            var uniqueCheck = await _dbContext.Set<Todo>().AnyAsync(x => x.Title == newController.Title);
+            if(uniqueCheck )
+            {
+                return BadRequest("Title is not unique");
+            }
+            _dbContext.Add(newController);
+            await _dbContext.SaveChangesAsync();
 
             return Ok();
         }
@@ -47,7 +54,7 @@ namespace ProjectManager.Api.Controllers
         [HttpGet("api/v1/Project")]
         public async Task<ActionResult<IEnumerable<ProjectDetailModel>>> GetList()
         {
-            var dbEntities = await _Dbcontext
+            var dbEntities = await _dbContext
                 .Set<Project>()
                 .FilterDeleted()
                 .Select(x => new ProjectDetailModel
@@ -66,7 +73,7 @@ namespace ProjectManager.Api.Controllers
             [FromRoute] Guid id
             )
         {
-            var dbEntity = await _Dbcontext
+            var dbEntity = await _dbContext
                 .Set<Project>()
                 .Where(X => X.Id == id)
                 .FilterDeleted()
@@ -90,7 +97,7 @@ namespace ProjectManager.Api.Controllers
       [FromBody] ProjectCreateModel patch
       )
         {
-            var dbEntity = await _Dbcontext
+            var dbEntity = await _dbContext
                 .Set<Project>()
                  .FilterDeleted()
                 .SingleOrDefaultAsync(X => X.Id == id);
@@ -109,7 +116,7 @@ namespace ProjectManager.Api.Controllers
            [FromRoute] Guid id
            )
         {
-            var dbEntity = await _Dbcontext
+            var dbEntity = await _dbContext
                 .Set<Project>()
                  .FilterDeleted()
                 .SingleOrDefaultAsync(X => X.Id == id);
@@ -120,7 +127,7 @@ namespace ProjectManager.Api.Controllers
             }
 
             dbEntity.SetDeleteBySystem(_clock.GetCurrentInstant());
-            await _Dbcontext.SaveChangesAsync();
+            await _dbContext.SaveChangesAsync();
 
             return NoContent();
         }

@@ -28,7 +28,8 @@ namespace ProjectManager.Api
 
             services.AddSingleton<IClock>(SystemClock.Instance);
 
-            services.AddControllers();
+            services.AddControllers()
+                    .AddNewtonsoftJson();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             services.AddEndpointsApiExplorer();
             services.AddSwaggerGen();
