@@ -5,52 +5,59 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProjectManager.Data.Interfaces;
+namespace ProjectManager.Data.Interfaces
+{
+    public interface ITrackable
+    {
+        public Instant CreatedAt { get; set;}
+        public string CreatedBy { get; set;}
+        public Instant ModifiedAt { get; set;}
+        public string ModifiedBy { get; set;}
+        public Instant? DeletedAt { get; set;}
+        public string? DeletedBy { get; set;}
+    }
 
-public interface ITrackable
-{
-    public Instant CreatedAt { get; set; }
-    public string CreatedBy { get; set; } 
-    public Instant ModifiedAt { get; set; }
-    public string ModifiedBy { get; set; } 
-    public Instant? DeletedAt { get; set; }
-    public string? DeletedBy { get; set; } 
-}
-public static class ITrackableExtensions
-{
-    private const string SYSTEM = "System";
-    public static T SetCreatedBySystem<T>(this T trackable, Instant now)
-        where T : class,ITrackable
-        => trackable.SetCreatedBy(SYSTEM, now);
-    public static T SetModyfyBySystem<T>(this T trackable, Instant now)
+    public static class ITrackableExtensions
+    {
+        private const string SYSTEM = "System";
+
+        public static T SetCreateBySystem<T>(this T trackable, Instant now)
+            where T : class, ITrackable
+            => trackable.SetCreateBy(SYSTEM, now);
+
+        public static T SetModifyBySystem<T>(this T trackable, Instant now)
         where T : class, ITrackable
         => trackable.SetModifyBy(SYSTEM, now);
-    public static T SetDeletedBySystem<T>(this T trackable, Instant now)
-    where T : class, ITrackable
-    => trackable.SetDeletedBy(SYSTEM, now);
 
-    public static T SetCreatedBy<T>(this T trackable, string author, Instant now)
+        public static T SetDeleteBySystem<T>(this T trackable, Instant now)
         where T : class, ITrackable
-    {
-        trackable.CreatedAt = now;
-        trackable.CreatedBy = author;
+        => trackable.SetDeleteBy(SYSTEM, now);
 
-        return trackable.SetModifyBy(author, now); ;
-    }
-    public static T SetModifyBy<T>(this T trackable, string author, Instant now)
+        public static T SetCreateBy<T>(this T trackable, string author, Instant now)
+            where T: class, ITrackable
+        {
+            trackable.CreatedAt= now;
+            trackable.CreatedBy= author;
+
+            return trackable.SetModifyBy(author, now);
+        }
+
+        public static T SetModifyBy<T>(this T trackable, string author, Instant now)
             where T : class, ITrackable
-    {
-        trackable.ModifiedAt = now;
-        trackable.ModifiedBy = author;
+        {
+            trackable.ModifiedAt = now;
+            trackable.ModifiedBy = author;
 
-        return trackable;
-    }
-    public static T SetDeletedBy<T>(this T trackable, string author, Instant now)
-                where T : class, ITrackable
-    {
-        trackable.DeletedAt = now;
-        trackable.DeletedBy = author;
+            return trackable;
+        }
 
-        return trackable;
+        public static T SetDeleteBy<T>(this T trackable, string author, Instant now)
+            where T : class, ITrackable
+        {
+            trackable.DeletedAt = now;
+            trackable.DeletedBy = author;
+
+            return trackable;
+        }
     }
 }

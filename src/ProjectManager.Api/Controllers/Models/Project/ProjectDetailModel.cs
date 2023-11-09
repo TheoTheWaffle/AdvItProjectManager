@@ -1,13 +1,10 @@
-﻿namespace ProjectManager.Api.Controllers.Models.Todos
+﻿namespace ProjectManager.Api.Controllers.Models.Project
 {
-    public class TodoDetailModel
+    public class ProjectDetailModel
     {
         public Guid Id { get; set; }
         public string Title { get; set; } = null!;
         public string? Description { get; set; }
         public string CreatedAt { get; set; } = null!;
-
-        public Guid ProjectId { get; set; }
-
     }
 }

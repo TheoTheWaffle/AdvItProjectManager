@@ -1,54 +1,55 @@
 ﻿using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using NodaTime;
-using ProjectManager.Data;
+using ProjectManager.Data.Entities;
 
-namespace ProjectManager.Api;
-
-public class Startup
+namespace ProjectManager.Api
 {
-    private readonly IConfiguration _configuration;
-    private readonly IWebHostEnvironment _environment;
-    public Startup(IConfiguration configuration, IWebHostEnvironment environment)
+    public class Startup
     {
-
-        _configuration = configuration;
-        _environment = environment;
-    }
-    public void ConfigureServices(IServiceCollection services)
-    {
-        services.AddDbContext<AppDbContext>(options =>
+        private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _enviroment;
+        public Startup(IConfiguration configuration, IWebHostEnvironment enviroment)
         {
-            var connectionString = _configuration.GetConnectionString("DefaultConnection");
-            options.UseNpgsql(connectionString, builder => 
-            {
-                builder.UseNodaTime();
-            });
-        });
-        services.AddSingleton<IClock>(SystemClock.Instance);
-
-
-        services.AddControllers();
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-        services.AddEndpointsApiExplorer();
-        services.AddSwaggerGen();
-
-    }
-    public void Configure(IApplicationBuilder app)
-    {
-        // Configure the HTTP request pipeline.
-        if (_environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            _configuration = configuration;
+            _enviroment = enviroment;
         }
-        app.UseRouting();
 
-        app.UseAuthorization();
-        app.UseEndpoints(endpoints =>
+        public void ConfigureServices(IServiceCollection services)
         {
-            endpoints.MapControllers();
-        });
+            services.AddDbContext<ApplicationDbContext>(options =>
+            {
+                var connectionString = _configuration.GetConnectionString("DefaultConnection");
+                options.UseNpgsql(connectionString, builder =>
+                {
+                    builder.UseNodaTime();
+                });
+            });
+
+            services.AddSingleton<IClock>(SystemClock.Instance);
+
+            services.AddControllers();
+            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+            services.AddEndpointsApiExplorer();
+            services.AddSwaggerGen();
+
+        }
+
+        public void Configure(IApplicationBuilder app)
+        {
+            // Configure the HTTP request pipeline.
+            if (_enviroment.IsDevelopment())
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI();
+            }
+
+            app.UseRouting();
+            app.UseAuthorization();
+            app.UseEndpoints(endpoints =>
+            {
+                endpoints.MapControllers();
+            });
+        }
     }
 }

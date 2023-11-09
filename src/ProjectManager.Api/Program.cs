@@ -1,15 +1,18 @@
 using Microsoft.Extensions.Configuration.Json;
+using System.Runtime.InteropServices;
 
 namespace ProjectManager.Api;
 public static class Program
 {
     private static string ContentRootPath = Directory.GetCurrentDirectory();
+
     public static async Task Main(string[] args)
     {
         var builder = CreateHostBuilder(args);
         var host = builder.Build();
         await host.RunAsync();
     }
+
     public static IHostBuilder CreateHostBuilder(string[] args)
     {
         return Host.CreateDefaultBuilder(args)
